@@ -73,6 +73,8 @@ fn main() {
 
     // If no input files have been specified, use the content of the current directory.
     if input_files.is_empty() && !parser.found("stdin") {
+        let mut input_files_plainfiles: Vec<String> = Vec::new();
+        let mut input_files_dirs: Vec<String> = Vec::new();
         let current_dir = env::current_dir().unwrap_or_else(|err| {
             eprintln!("error: failed to locate current directory: {}", err);
             exit(1);
@@ -86,13 +88,37 @@ fn main() {
                 eprintln!("error: failed to read current directory entry: {}", err);
                 exit(1);
             });
+            let entry_is_dir = fs::canonicalize(entry.path())
+                .unwrap_or_else(|err| {
+                    eprintln!(
+                        "error: failed to decode current directory entry type: {:?}",
+                        err
+                    );
+                    exit(1);
+                })
+                .is_dir();
             let entry_as_string = entry.file_name().into_string().unwrap_or_else(|err| {
-                eprintln!("error: failed to decode current directory entry name: {:?}", err);
+                eprintln!(
+                    "error: failed to decode current directory entry name: {:?}",
+                    err
+                );
                 exit(1);
             });
-            input_files.push(entry_as_string);
+            if entry_is_dir {
+                input_files_dirs.push(entry_as_string);
+            } else {
+                input_files_plainfiles.push(entry_as_string);
+            }
         }
-        input_files.sort();
+        let sort_fn = |filename: &String| {
+            filename
+                .replace(|c: char| !c.is_ascii_alphanumeric(), "")
+                .to_lowercase()
+        };
+        input_files_dirs.sort_by_key(sort_fn);
+        input_files.append(&mut input_files_dirs);
+        input_files_plainfiles.sort_by_key(sort_fn);
+        input_files.append(&mut input_files_plainfiles);
     }
 
     // If the --stdin flag has been set, try reading from standard input.
