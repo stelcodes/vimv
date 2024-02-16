@@ -1,10 +1,9 @@
 {
-  description =
-    "My command line querying utility for video game archives!";
+  description = "A command line utility for batch renaming files in an editor";
 
   inputs = {
-    # nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
-    nixpkgs.url = "nixpkgs";
+    # nixpkgs.url = "nixpkgs";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     naersk = {
       url = "github:nix-community/naersk/master";
       inputs.nixpkgs.follows = "nixpkgs";
