@@ -4,6 +4,7 @@ use libc;
 use rand::Rng;
 use std::collections::HashSet;
 use std::env;
+use std::ffi::*;
 use std::fs;
 use std::io::Read;
 use std::path::Path;
@@ -113,7 +114,7 @@ fn main() {
             }
         }
         let sort_fn = |s1: &String, s2: &String| {
-            let result: std::cmp::Ordering;
+            let mut result: Option<std::cmp::Ordering> = None;
             let mut index1: Option<usize> = None;
             for x in s1.char_indices() {
                 let (i, c) = x;
@@ -146,44 +147,62 @@ fn main() {
                 num2 = None;
             }
 
+            println!("=======================================================");
+            println!("s1: '{}'", s1);
+            println!("num1: '{}'", num1.unwrap_or(-1000));
+            println!("s2: '{}'", s2);
+            println!("num2: '{}'", num2.unwrap_or(-1000));
             if num1.is_some() && num2.is_some() {
                 if num1.unwrap() > num2.unwrap() {
-                    result = std::cmp::Ordering::Greater;
-                    return result;
-                } else if num1.unwrap() > num2.unwrap() {
-                    result = std::cmp::Ordering::Less;
-                    return result;
+                    result = Some(std::cmp::Ordering::Greater);
+                } else if num1.unwrap() < num2.unwrap() {
+                    result = Some(std::cmp::Ordering::Less);
                 }
-            } else if num1.is_some() {
-                result = std::cmp::Ordering::Less;
-                return result;
-            } else if num2.is_some() {
-                result = std::cmp::Ordering::Greater;
-                return result;
+            } else if num1.is_some() && num2.is_none() {
+                result = Some(std::cmp::Ordering::Less);
+            } else if num1.is_none() && num2.is_some() {
+                result = Some(std::cmp::Ordering::Greater);
             }
 
-            let mut s1a = s1.to_owned();
-            let mut s2a = s2.to_owned();
-            s1a = s1a
-                .to_lowercase()
-                .replace(|c: char| !c.is_ascii_alphanumeric(), "");
-            s2a = s2a
-                .to_lowercase()
-                .replace(|c: char| !c.is_ascii_alphanumeric(), "");
-            let x = unsafe {
-                libc::strcoll(
-                    s1a.to_uppercase().as_ptr() as *const i8,
-                    s2a.to_uppercase().as_ptr() as *const i8,
-                )
-            };
-            if x < 0 {
-                result = std::cmp::Ordering::Less;
-            } else if x < 0 {
-                result = std::cmp::Ordering::Greater;
-            } else {
-                result = std::cmp::Ordering::Equal;
+            if result.is_none() {
+                let s1a = s1
+                    .to_owned()
+                    .replace(|c: char| !c.is_ascii_alphanumeric(), "")
+                    .to_uppercase()
+                    .into_bytes();
+                let s2a = s2
+                    .to_owned()
+                    .replace(|c: char| !c.is_ascii_alphanumeric(), "")
+                    .to_uppercase()
+                    .into_bytes();
+                let x: i32;
+                unsafe {
+                    let c_string = CString::new(s1a.clone()).expect("CString::new failed");
+                    let c_string_2 = CString::new(s2a.clone()).expect("CString::new failed");
+                    x = libc::strcoll(c_string.as_ptr() as *const i8, c_string_2.as_ptr() as *const i8);
+                };
+                if x < 0 {
+                    result = Some(std::cmp::Ordering::Less);
+                } else if x > 0 {
+                    result = Some(std::cmp::Ordering::Greater);
+                }
             }
-            return result;
+
+            let result_str: String;
+            if result.is_none() {
+                result_str = "NONE".to_owned();
+            } else {
+                result_str = match result.unwrap() {
+                    std::cmp::Ordering::Less => "LESS".to_owned(),
+                    std::cmp::Ordering::Greater => "GREATER".to_owned(),
+                    std::cmp::Ordering::Equal => "EQUAL".to_owned(),
+                };
+            }
+            println!("result: '{}'", result_str);
+            return match result {
+                Some(i) => i,
+                None => std::cmp::Ordering::Equal,
+            };
         };
         input_files_dirs.sort_by(sort_fn);
         input_files.append(&mut input_files_dirs);
