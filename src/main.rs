@@ -8,6 +8,7 @@ use std::fs;
 use std::io::Read;
 use std::path::Path;
 use std::process::exit;
+use std::str::FromStr;
 
 const HELPTEXT: &str = "
 Usage: vimv [files]
@@ -112,6 +113,50 @@ fn main() {
             }
         }
         let sort_fn = |s1: &String, s2: &String| {
+            let result: std::cmp::Ordering;
+            let mut index1: Option<usize> = None;
+            for x in s1.char_indices() {
+                let (i, c) = x;
+                if c.is_digit(10) {
+                    index1 = Some(i + 1);
+                } else {
+                    break;
+                }
+            }
+            let num1: Option<i32>;
+            if index1.is_some() {
+                num1 = FromStr::from_str(&s1[..index1.unwrap()]).ok();
+            } else {
+                num1 = None;
+            }
+
+            let mut index2: Option<usize> = None;
+            for x in s2.char_indices() {
+                let (i, c) = x;
+                if c.is_digit(10) {
+                    index2 = Some(i + 1);
+                } else {
+                    break;
+                }
+            }
+            let num2: Option<i32>;
+            if index2.is_some() {
+                num2 = FromStr::from_str(&s2[..index2.unwrap()]).ok();
+            } else {
+                num2 = None;
+            }
+
+            if num1.is_some() && num2.is_some() {
+                result = num1.unwrap().cmp(&num2.unwrap());
+                return result;
+            } else if num1.is_some() {
+                result = std::cmp::Ordering::Less;
+                return result;
+            } else if num2.is_some() {
+                result = std::cmp::Ordering::Greater;
+                return result;
+            }
+
             let mut s1a = s1.to_owned();
             let mut s2a = s2.to_owned();
             if s1a.starts_with('.') {
@@ -132,7 +177,6 @@ fn main() {
                     s2a.to_lowercase().as_ptr() as *const i8,
                 )
             };
-            let result: std::cmp::Ordering;
             if x < 0 {
                 result = std::cmp::Ordering::Less;
             } else if x < 0 {
