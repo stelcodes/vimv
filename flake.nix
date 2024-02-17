@@ -2,8 +2,8 @@
   description = "A command line utility for batch renaming files in an editor";
 
   inputs = {
-    # nixpkgs.url = "nixpkgs";
-    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    nixpkgs.url = "nixpkgs";
+    # nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     naersk = {
       url = "github:nix-community/naersk/master";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -18,11 +18,13 @@
         naersk-lib = pkgs.callPackage naersk { };
       in
       {
-        packages.default = naersk-lib.buildPackage ./.;
-        shells.default = with pkgs;
-          mkShell {
-            packages = [ cargo rustc rustfmt pre-commit rustPackages.clippy ];
-            RUST_SRC_PATH = rustPlatform.rustLibSrc;
-          };
+        packages.default = naersk-lib.buildPackage {
+          src = ./.;
+          buildInputs = [ pkgs.glibc ];
+        };
+        devShells.default = pkgs.mkShell {
+          buildInputs = with pkgs; [ cargo rustc rustfmt pre-commit clippy rust-analyzer ];
+          RUST_SRC_PATH = pkgs.rustPlatform.rustLibSrc;
+        };
       });
 }
