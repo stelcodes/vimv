@@ -115,75 +115,73 @@ fn main() {
         }
         let sort_fn = |s1: &String, s2: &String| {
             let mut result: Option<std::cmp::Ordering> = None;
-            let mut index1: Option<usize> = None;
+            let mut s1_num_end_index: Option<usize> = None;
             for x in s1.char_indices() {
                 let (i, c) = x;
                 if c.is_digit(10) {
-                    index1 = Some(i + 1);
+                    s1_num_end_index = Some(i + 1);
                 } else {
                     break;
                 }
             }
-            let num1: Option<i32>;
-            if index1.is_some() {
-                num1 = FromStr::from_str(&s1[..index1.unwrap()]).ok();
+            let s1_num: Option<i32>;
+            if s1_num_end_index.is_some() {
+                s1_num = FromStr::from_str(&s1[..s1_num_end_index.unwrap()]).ok();
             } else {
-                num1 = None;
+                s1_num = None;
             }
 
-            let mut index2: Option<usize> = None;
+            let mut s2_num_end_index: Option<usize> = None;
             for x in s2.char_indices() {
                 let (i, c) = x;
                 if c.is_digit(10) {
-                    index2 = Some(i + 1);
+                    s2_num_end_index = Some(i + 1);
                 } else {
                     break;
                 }
             }
-            let num2: Option<i32>;
-            if index2.is_some() {
-                num2 = FromStr::from_str(&s2[..index2.unwrap()]).ok();
+            let s2_num: Option<i32>;
+            if s2_num_end_index.is_some() {
+                s2_num = FromStr::from_str(&s2[..s2_num_end_index.unwrap()]).ok();
             } else {
-                num2 = None;
+                s2_num = None;
             }
 
-            if num1.is_some() && num2.is_some() {
-                if num1.unwrap() > num2.unwrap() {
+            if s1_num.is_some() && s2_num.is_some() {
+                if s1_num.unwrap() > s2_num.unwrap() {
                     result = Some(std::cmp::Ordering::Greater);
-                } else if num1.unwrap() < num2.unwrap() {
+                } else if s1_num.unwrap() < s2_num.unwrap() {
                     result = Some(std::cmp::Ordering::Less);
                 }
-            } else if num1.is_some() && num2.is_none() {
+            } else if s1_num.is_some() && s2_num.is_none() {
                 result = Some(std::cmp::Ordering::Less);
-            } else if num1.is_none() && num2.is_some() {
+            } else if s1_num.is_none() && s2_num.is_some() {
                 result = Some(std::cmp::Ordering::Greater);
             }
 
             if result.is_none() {
-                let mut s1a = s1
-                    .to_owned()
+                let mut s1_stripped = s1
                     .replace(|c: char| !c.is_ascii_alphanumeric(), "")
                     .to_uppercase();
-                let mut s2a = s2
-                    .to_owned()
+                let mut s2_stripped = s2
                     .replace(|c: char| !c.is_ascii_alphanumeric(), "")
                     .to_uppercase();
-                if s1a.is_empty() && s2a.is_empty() {
-                    s1a = s1.to_owned();
-                    s2a = s2.to_owned();
+                if s1_stripped.is_empty() && s2_stripped.is_empty() {
+                    s1_stripped = s1.to_owned();
+                    s2_stripped = s2.to_owned();
                 }
-                let x: i32;
+                let strcoll_result: i32;
                 unsafe {
-                    let c_string = CString::new(s1a.into_bytes()).expect("CString::new failed");
-                    let c_string_2 = CString::new(s2a.into_bytes()).expect("CString::new failed");
-                    x = libc::strcoll(
-                        c_string.as_ptr() as *const i8,
-                        c_string_2.as_ptr() as *const i8,
+                    let c_string_s1 = CString::new(s1_stripped.into_bytes()).expect("CString::new failed");
+                    let c_string_s2 = CString::new(s2_stripped.into_bytes()).expect("CString::new failed");
+                    strcoll_result = libc::strcoll(
+                        c_string_s1.as_ptr() as *const i8,
+                        c_string_s2.as_ptr() as *const i8,
                     );
                 };
-                if x < 0 {
+                if strcoll_result < 0 {
                     result = Some(std::cmp::Ordering::Less);
-                } else if x > 0 {
+                } else if strcoll_result > 0 {
                     result = Some(std::cmp::Ordering::Greater);
                 }
             }
