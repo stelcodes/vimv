@@ -147,11 +147,6 @@ fn main() {
                 num2 = None;
             }
 
-            println!("=======================================================");
-            println!("s1: '{}'", s1);
-            println!("num1: '{}'", num1.unwrap_or(-1000));
-            println!("s2: '{}'", s2);
-            println!("num2: '{}'", num2.unwrap_or(-1000));
             if num1.is_some() && num2.is_some() {
                 if num1.unwrap() > num2.unwrap() {
                     result = Some(std::cmp::Ordering::Greater);
@@ -165,21 +160,26 @@ fn main() {
             }
 
             if result.is_none() {
-                let s1a = s1
+                let mut s1a = s1
                     .to_owned()
                     .replace(|c: char| !c.is_ascii_alphanumeric(), "")
-                    .to_uppercase()
-                    .into_bytes();
-                let s2a = s2
+                    .to_uppercase();
+                let mut s2a = s2
                     .to_owned()
                     .replace(|c: char| !c.is_ascii_alphanumeric(), "")
-                    .to_uppercase()
-                    .into_bytes();
+                    .to_uppercase();
+                if s1a.is_empty() && s2a.is_empty() {
+                    s1a = s1.to_owned();
+                    s2a = s2.to_owned();
+                }
                 let x: i32;
                 unsafe {
-                    let c_string = CString::new(s1a.clone()).expect("CString::new failed");
-                    let c_string_2 = CString::new(s2a.clone()).expect("CString::new failed");
-                    x = libc::strcoll(c_string.as_ptr() as *const i8, c_string_2.as_ptr() as *const i8);
+                    let c_string = CString::new(s1a.into_bytes()).expect("CString::new failed");
+                    let c_string_2 = CString::new(s2a.into_bytes()).expect("CString::new failed");
+                    x = libc::strcoll(
+                        c_string.as_ptr() as *const i8,
+                        c_string_2.as_ptr() as *const i8,
+                    );
                 };
                 if x < 0 {
                     result = Some(std::cmp::Ordering::Less);
@@ -188,20 +188,9 @@ fn main() {
                 }
             }
 
-            let result_str: String;
-            if result.is_none() {
-                result_str = "NONE".to_owned();
-            } else {
-                result_str = match result.unwrap() {
-                    std::cmp::Ordering::Less => "LESS".to_owned(),
-                    std::cmp::Ordering::Greater => "GREATER".to_owned(),
-                    std::cmp::Ordering::Equal => "EQUAL".to_owned(),
-                };
-            }
-            println!("result: '{}'", result_str);
             return match result {
                 Some(i) => i,
-                None => std::cmp::Ordering::Equal,
+                None => s1.cmp(s2),
             };
         };
         input_files_dirs.sort_by(sort_fn);
