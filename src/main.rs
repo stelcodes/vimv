@@ -147,8 +147,13 @@ fn main() {
             }
 
             if num1.is_some() && num2.is_some() {
-                result = num1.unwrap().cmp(&num2.unwrap());
-                return result;
+                if num1.unwrap() > num2.unwrap() {
+                    result = std::cmp::Ordering::Greater;
+                    return result;
+                } else if num1.unwrap() > num2.unwrap() {
+                    result = std::cmp::Ordering::Less;
+                    return result;
+                }
             } else if num1.is_some() {
                 result = std::cmp::Ordering::Less;
                 return result;
@@ -159,12 +164,6 @@ fn main() {
 
             let mut s1a = s1.to_owned();
             let mut s2a = s2.to_owned();
-            if s1a.starts_with('.') {
-                _ = s1a.remove(0)
-            }
-            if s2a.starts_with('.') {
-                _ = s2a.remove(0)
-            }
             s1a = s1a
                 .to_lowercase()
                 .replace(|c: char| !c.is_ascii_alphanumeric(), "");
@@ -173,8 +172,8 @@ fn main() {
                 .replace(|c: char| !c.is_ascii_alphanumeric(), "");
             let x = unsafe {
                 libc::strcoll(
-                    s1a.to_lowercase().as_ptr() as *const i8,
-                    s2a.to_lowercase().as_ptr() as *const i8,
+                    s1a.to_uppercase().as_ptr() as *const i8,
+                    s2a.to_uppercase().as_ptr() as *const i8,
                 )
             };
             if x < 0 {
