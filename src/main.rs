@@ -1,5 +1,6 @@
 use arguably::ArgParser;
 use colored::*;
+use libc;
 use rand::Rng;
 use std::collections::HashSet;
 use std::env;
@@ -110,14 +111,40 @@ fn main() {
                 input_files_plainfiles.push(entry_as_string);
             }
         }
-        let sort_fn = |filename: &String| {
-            filename
-                .replace(|c: char| !c.is_ascii_alphanumeric(), "")
+        let sort_fn = |s1: &String, s2: &String| {
+            let mut s1a = s1.to_owned();
+            let mut s2a = s2.to_owned();
+            if s1a.starts_with('.') {
+                _ = s1a.remove(0)
+            }
+            if s2a.starts_with('.') {
+                _ = s2a.remove(0)
+            }
+            s1a = s1a
                 .to_lowercase()
+                .replace(|c: char| !c.is_ascii_alphanumeric(), "");
+            s2a = s2a
+                .to_lowercase()
+                .replace(|c: char| !c.is_ascii_alphanumeric(), "");
+            let x = unsafe {
+                libc::strcoll(
+                    s1a.to_lowercase().as_ptr() as *const i8,
+                    s2a.to_lowercase().as_ptr() as *const i8,
+                )
+            };
+            let result: std::cmp::Ordering;
+            if x < 0 {
+                result = std::cmp::Ordering::Less;
+            } else if x < 0 {
+                result = std::cmp::Ordering::Greater;
+            } else {
+                result = std::cmp::Ordering::Equal;
+            }
+            return result;
         };
-        input_files_dirs.sort_by_key(sort_fn);
+        input_files_dirs.sort_by(sort_fn);
         input_files.append(&mut input_files_dirs);
-        input_files_plainfiles.sort_by_key(sort_fn);
+        input_files_plainfiles.sort_by(sort_fn);
         input_files.append(&mut input_files_plainfiles);
     }
 
